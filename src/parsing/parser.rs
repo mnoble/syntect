@@ -173,20 +173,33 @@ impl ParseState {
                     match_pat.ensure_compiled_if_possible();
                     let refs_regex = if match_pat.has_captures && cur_level.captures.is_some() {
                         let &(ref region, ref s) = cur_level.captures.as_ref().unwrap();
-                        Some(match_pat.compile_with_refs(region, s))
+                        match match_pat.compile_with_refs(region, s) {
+                            Ok(m)  => Some(m),
+                            Err(_) => None,
+                        }
                     } else {
                         None
                     };
                     let regex = if let Some(ref rgx) = refs_regex {
-                        rgx
+                        Some(rgx)
                     } else {
-                        match_pat.regex.as_ref().unwrap()
+                        if match_pat.regex.is_some() {
+                            Some(match_pat.regex.as_ref().unwrap())
+                        } else {
+                            None
+                        }
                     };
-                    let matched = regex.search_with_options(line,
-                                                            *start,
-                                                            line.len(),
-                                                            onig::SEARCH_OPTION_NONE,
-                                                            Some(regions));
+
+                    let matched = if let Some(r) = regex {
+                        r.search_with_options(line,
+                                              *start,
+                                              line.len(),
+                                              onig::SEARCH_OPTION_NONE,
+                                              Some(regions))
+                    } else {
+                        None
+                    };
+
                     if let Some(match_start) = matched {
                         let match_end = regions.pos(0).unwrap().1;
                         // this is necessary to avoid infinite looping on dumb patterns

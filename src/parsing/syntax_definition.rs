@@ -4,7 +4,7 @@
 //! you might want to do with the data. Perhaps parsing your own syntax format
 //! into this data structure?
 use std::collections::HashMap;
-use onig::{self, Regex, Region, Syntax};
+use onig::{self, Error, Regex, Region, Syntax};
 use std::rc::{Rc, Weak};
 use std::cell::RefCell;
 use super::scope::*;
@@ -215,12 +215,11 @@ impl MatchPattern {
 
     /// Used by the parser to compile a regex which needs to reference
     /// regions from another matched pattern.
-    pub fn compile_with_refs(&self, region: &Region, s: &str) -> Regex {
+    pub fn compile_with_refs(&self, region: &Region, s: &str) -> Result<Regex, Error> {
         // TODO don't panic on invalid regex
         Regex::with_options(&self.regex_with_substitutes(region, s),
                             onig::REGEX_OPTION_CAPTURE_GROUP,
                             Syntax::default())
-            .unwrap()
     }
 
     fn compile_regex(&mut self) {
